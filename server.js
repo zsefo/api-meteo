@@ -1,36 +1,37 @@
-const express = require("express");
-const app = express();
-app.use(express.json());
+const apiUrl = "https://api-meteo-mqvf.onrender.com/api/data";
 
-let data = {
-  temperature: null,
-  humidite: null
-};
+function updateTime() {
+  const now = new Date();
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+  document.getElementById("current-time").innerText = `${hours}:${minutes}`;
+}
 
-// Route GET pour lire les données
-app.get("/api/data", (req, res) => {
-  res.json(data);
-});
+async function fetchData() {
+  try {
+    const response = await fetch(apiUrl);
 
-// Route POST pour recevoir les données
-app.post("/api/data", (req, res) => {
-  const { temperature, humidite } = req.body;
-  data.temperature = temperature;
-  data.humidite = humidite;
-  console.log("Données reçues :", data);
-  res.json({ status: "ok", data });
-});
+    if (!response.ok) {
+      console.error("Erreur HTTP : ", response.status);
+      return;
+    }
 
-// Route status (propre + utile pour tests)
-app.get("/api/status", (req, res) => {
-  res.json({
-    status: "ok",
-    message: "Serveur actif",
-    timestamp: Date.now()
-  });
-});
+    const data = await response.json();
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Serveur météo actif sur http://localhost:${PORT}`);
-});
+    document.querySelector("#temperature .value").innerText = `${data.temperature} °C`;
+    document.querySelector("#humidity .value").innerText = `${data.humidite} %`;
+
+  } catch (error) {
+    console.error("Erreur fetch : ", error);
+  }
+}
+
+function init() {
+  updateTime();
+  fetchData();
+
+  setInterval(updateTime, 1000);
+  setInterval(fetchData, 5000);
+}
+
+init();
